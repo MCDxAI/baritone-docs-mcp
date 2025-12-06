@@ -52,12 +52,24 @@ describe('Baritone Docs MCP Integration', () => {
     });
 
     it('should protect against path traversal in readDoc', async () => {
+        // Test Unix-style path traversal
         expect(() => {
             readDoc('../package.json');
         }).toThrow(/Access denied/);
 
+        // Test Windows-style path traversal (now normalized on all platforms)
         expect(() => {
-            readDoc('..\\package.json'); // Windows style
+            readDoc('..\\package.json');
+        }).toThrow(/Access denied/);
+
+        // Test multiple levels of traversal
+        expect(() => {
+            readDoc('../../package.json');
+        }).toThrow(/Access denied/);
+
+        // Test absolute paths
+        expect(() => {
+            readDoc('/etc/passwd');
         }).toThrow(/Access denied/);
     });
 
