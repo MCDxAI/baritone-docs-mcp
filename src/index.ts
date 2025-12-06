@@ -4,12 +4,13 @@ import { z } from "zod";
 import { ensureDocs, updateDocs, getDocsDir, initLocalDocs } from './cache.js';
 import { searchDocs } from './tools/search.js';
 import { readDoc } from './tools/read.js';
+import { handleDocsResource } from './resources/docs.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 // Initialize server
-const server = new McpServer({
+export const server = new McpServer({
     name: "baritone-docs-mcp",
     version: "1.0.0",
 });
@@ -109,55 +110,30 @@ server.tool(
 );
 
 // Resource: Docs
-// Resource: Docs
 server.resource(
     "docs",
     "docs://{path}",
     async (uri) => {
-        if (!ensureDocs()) {
-            throw new Error("Documentation not found. Please run baritone_refresh_docs first.");
-        }
-
-        // Expected uri: docs://baritone/api/Settings.md
-        // Note: uri.pathname might be null/empty depending on implementation for custom schemes
-        // We use uri.href manually to be safe
-        const href = uri.href;
-        const prefix = "docs://";
-        if (!href.startsWith(prefix)) {
-            throw new Error(`Invalid URI: ${href}`);
-        }
-
-        const path = href.substring(prefix.length);
-        const content = readDoc(path);
-
-        if (content === null) {
-            throw new Error("File not found.");
-        }
-
-        return {
-            contents: [{
-                uri: uri.href,
-                text: content
-            }]
-        };
+        return handleDocsResource(uri);
     }
 );
 
 // -- Setup --
 
-async function main() {
+export async function main() {
     // Check if we need to init from local (development / first run hack)
     // In production, we'd rely on the user calling refresh_docs, or do it automatically if missing.
     // For this environment, let's look for a local 'docs' folder in the CWD
-
-    // Fix: __dirname equivalent in ESM
-    // But actually process.cwd() is fine for where the specific user is running it from
     const localDocs = path.resolve(process.cwd(), 'docs');
 
     // Only auto-init if we are in development mode or explicitly told to
     // For this tasks's purpose, we want to auto-init cache if possible
     if (fs.existsSync(localDocs) && fs.statSync(localDocs).isDirectory()) {
-        initLocalDocs(localDocs);
+        try {
+            initLocalDocs(localDocs);
+        } catch (e) {
+            // ignore
+        }
     }
 
     const transport = new StdioServerTransport();
@@ -165,7 +141,13 @@ async function main() {
     console.error("Baritone Docs MCP Server running on stdio");
 }
 
-main().catch((error) => {
-    console.error("Fatal error in main():", error);
-    process.exit(1);
-});
+// Only run main if executed directly (ESM entry point check)
+const isMainModule = import.meta.url === `file://${process.argv[1]}` ||
+                     import.meta.url.endsWith(process.argv[1]);
+
+if (isMainModule) {
+    main().catch((error) => {
+        console.error("Fatal error in main():", error);
+        process.exit(1);
+    });
+}

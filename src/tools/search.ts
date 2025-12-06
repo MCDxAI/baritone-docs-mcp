@@ -1,11 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { getDocsDir, updateDocs } from '../cache.js';
+import { getDocsDir } from '../cache.js';
 import { DocFile, SearchResult } from '../types.js';
-
-// Simple text search for now.
-// In a real scenario, we might want to built an index or use a lightweight search library like Fuse.js or Minisearch.
-// Given strict limitation on dependencies and complexity, we'll do a recursive scan + content match.
 
 function getAllFiles(dir: string, fileList: DocFile[] = [], rootDir: string): DocFile[] {
     const files = fs.readdirSync(dir);
@@ -33,8 +29,6 @@ function getAllFiles(dir: string, fileList: DocFile[] = [], rootDir: string): Do
 export async function searchDocs(query: string): Promise<SearchResult[]> {
     const docsDir = getDocsDir();
 
-    // If docs don't exist, try to update them first? Or fail?
-    // Let's assume the server init handles ensureDocs, but if missing we return empty.
     if (!fs.existsSync(docsDir)) {
         return [];
     }
@@ -48,13 +42,18 @@ export async function searchDocs(query: string): Promise<SearchResult[]> {
         let score = 0;
         const content = fs.readFileSync(file.fullPath, 'utf-8');
         const contentLower = content.toLowerCase();
+        const nameLower = file.name.toLowerCase();
 
-        // Basic scoring
-        if (file.name.toLowerCase().includes(queryLower)) {
-            score += 10;
+        // Scoring Rules
+        if (nameLower === queryLower + ".md") {
+            score += 1000; // Exact file name match (ignoring extension)
+        } else if (nameLower.startsWith(queryLower)) {
+            score += 500; // Starts with query
+        } else if (nameLower.includes(queryLower)) {
+            score += 100; // File name contains query
         }
 
-        // Count occurrences
+        // Content scoring
         const regex = new RegExp(queryLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
         const matches = (contentLower.match(regex) || []).length;
         score += matches;

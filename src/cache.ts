@@ -86,9 +86,24 @@ export async function updateDocs(repoOwner: string = "MCDxAI", repoName: string 
 
         if (entries.length > 0) {
             const extractedRoot = path.join(cacheDir, entries[0]);
-            // Rename or move contents to normalized 'docs' folder
-            // Actually, let's just rename extractedRoot to 'docs'
-            fs.renameSync(extractedRoot, docsDir);
+            let targetContent = extractedRoot;
+
+            // check if there is a 'docs' folder inside
+            const nestedDocs = path.join(extractedRoot, 'docs');
+            if (fs.existsSync(nestedDocs) && fs.statSync(nestedDocs).isDirectory()) {
+                targetContent = nestedDocs;
+            }
+
+            // Rename/Move to docsDir
+            try {
+                fs.renameSync(targetContent, docsDir);
+            } catch (e) {
+                fs.cpSync(targetContent, docsDir, { recursive: true });
+            }
+
+            if (targetContent !== extractedRoot && fs.existsSync(extractedRoot)) {
+                fs.rmSync(extractedRoot, { recursive: true, force: true });
+            }
         }
 
         // Cleanup zip

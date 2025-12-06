@@ -1,15 +1,15 @@
 {
   "name": "baritone-docs-mcp",
   "version": "1.0.0",
-  "type": "module",
   "description": "Model Context Protocol server for Baritone documentation",
-  "main": "index.js",
+  "type": "module",
+  "main": "dist/index.js",
   "directories": {
     "doc": "docs"
   },
   "scripts": {
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run"
   },
   "repository": {
     "type": "git",
@@ -32,5 +32,8 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.15"
   }
 }
