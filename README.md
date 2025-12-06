@@ -4,7 +4,8 @@
 
 A Model Context Protocol server for Baritone documentation.
 <br>
-This tool empowers AI agents to search, read, and reference Baritone's extensive documentation seamlessly.
+
+
 
 <br>
 
@@ -31,3 +32,40 @@ This tool empowers AI agents to search, read, and reference Baritone's extensive
 | `tests/` | Integration tests for the MCP server. |
 
 </div>
+
+<div align="center">
+
+**Install the MCP Server**
+
+</div>
+
+```bash
+# Clone the repository
+git clone https://github.com/MCDxAI/baritone-docs-mcp.git
+cd code-search-mcp
+
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+```
+
+<div align="center">
+  <h2>Configuration</h2>
+</div>
+
+Add to your MCP settings file (e.g., `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "code-search": {
+      "command": "node",
+      "args": [
+        "/path/to/baritone-docs-mcp/dist/index.js"
+      ]
+    }
+  }
+}
+```
