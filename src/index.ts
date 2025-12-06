@@ -1,122 +1,210 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
-import { ensureDocs, updateDocs, getDocsDir, initLocalDocs } from './cache.js';
+import {
+    CallToolRequestSchema,
+    ListToolsRequestSchema,
+    ListResourcesRequestSchema,
+    ReadResourceRequestSchema
+} from "@modelcontextprotocol/sdk/types.js";
+import { ensureDocs, updateDocs, initLocalDocs } from './cache.js';
 import { searchDocs } from './tools/search.js';
 import { readDoc } from './tools/read.js';
 import { handleDocsResource } from './resources/docs.js';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
+
+// Tool definitions
+const TOOLS = [
+    {
+        name: "baritone_refresh_docs",
+        description: "Download and update the local documentation cache from the GitHub repository.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                force: {
+                    type: "boolean",
+                    description: "Force re-download even if cache exists"
+                }
+            }
+        }
+    },
+    {
+        name: "baritone_search_docs",
+        description: "Search the Baritone documentation for a specific query.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                query: {
+                    type: "string",
+                    description: "The search query (e.g., 'GoalBlock', 'pathing')"
+                }
+            },
+            required: ["query"]
+        }
+    },
+    {
+        name: "baritone_read_doc",
+        description: "Read the full content of a specific documentation file.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                path: {
+                    type: "string",
+                    description: "The relative path to the file (as returned by search results)"
+                }
+            },
+            required: ["path"]
+        }
+    }
+];
+
+// Resource definitions
+const RESOURCES = [
+    {
+        uri: "docs://{path}",
+        name: "Baritone Documentation",
+        description: "Access Baritone documentation files",
+        mimeType: "text/markdown"
+    }
+];
 
 // Initialize server
-export const server = new McpServer({
-    name: "baritone-docs-mcp",
-    version: "1.0.0",
+export const server = new Server(
+    {
+        name: "baritone-docs-mcp",
+        version: "1.0.0",
+    },
+    {
+        capabilities: {
+            tools: {},
+            resources: {}
+        }
+    }
+);
+
+// -- Request Handlers --
+
+// List available tools
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return { tools: TOOLS };
 });
 
-// -- Tools --
+// Handle tool calls
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
 
-// Tool: Refresh Docs
-server.tool(
-    "baritone_refresh_docs",
-    "Download and update the local documentation cache from the GitHub repository.",
-    {
-        force: z.boolean().optional().describe("Force re-download even if cache exists")
-    },
-    async ({ force }) => {
-        try {
-            await updateDocs();
-            return {
-                content: [{ type: "text", text: "Documentation updated successfully." }]
-            };
-        } catch (err: any) {
-            return {
-                content: [{ type: "text", text: `Failed to update docs: ${err.message}` }],
-                isError: true
-            };
-        }
-    }
-);
+    try {
+        switch (name) {
+            case "baritone_refresh_docs": {
+                try {
+                    await updateDocs();
+                    return {
+                        content: [{ type: "text", text: "Documentation updated successfully." }]
+                    };
+                } catch (err: any) {
+                    return {
+                        content: [{ type: "text", text: `Failed to update docs: ${err.message}` }],
+                        isError: true
+                    };
+                }
+            }
 
-// Tool: Search Docs
-server.tool(
-    "baritone_search_docs",
-    "Search the Baritone documentation for a specific query.",
-    {
-        query: z.string().describe("The search query (e.g., 'GoalBlock', 'pathing')")
-    },
-    async ({ query }) => {
-        if (!ensureDocs()) {
-            return {
-                content: [{ type: "text", text: "Documentation not found. Please run baritone_refresh_docs first." }],
-                isError: true
-            };
-        }
+            case "baritone_search_docs": {
+                const query = (args as any)?.query;
 
-        const results = await searchDocs(query);
+                if (!query) {
+                    return {
+                        content: [{ type: "text", text: "Query parameter is required." }],
+                        isError: true
+                    };
+                }
 
-        if (results.length === 0) {
-            return {
-                content: [{ type: "text", text: "No results found." }]
-            };
-        }
+                if (!ensureDocs()) {
+                    return {
+                        content: [{ type: "text", text: "Documentation not found. Please run baritone_refresh_docs first." }],
+                        isError: true
+                    };
+                }
 
-        const text = results.map(r =>
-            `### [${r.file.name}](${r.file.path})\n` +
-            `**Score**: ${r.score}\n` +
-            `**Matches**: \n${r.matches?.map(m => `> ${m}`).join('\n')}\n`
-        ).join('\n---\n');
+                const results = await searchDocs(query);
 
-        return {
-            content: [{ type: "text", text }]
-        };
-    }
-);
+                if (results.length === 0) {
+                    return {
+                        content: [{ type: "text", text: "No results found." }]
+                    };
+                }
 
-// Tool: Read Doc
-server.tool(
-    "baritone_read_doc",
-    "Read the full content of a specific documentation file.",
-    {
-        path: z.string().describe("The relative path to the file (as returned by search results)")
-    },
-    async ({ path }) => {
-        if (!ensureDocs()) {
-            return {
-                content: [{ type: "text", text: "Documentation not found. Please run baritone_refresh_docs first." }],
-                isError: true
-            };
-        }
+                const text = results.map(r =>
+                    `### [${r.file.name}](${r.file.path})\n` +
+                    `**Score**: ${r.score}\n` +
+                    `**Matches**: \n${r.matches?.map(m => `> ${m}`).join('\n')}\n`
+                ).join('\n---\n');
 
-        try {
-            const content = readDoc(path);
-            if (content === null) {
                 return {
-                    content: [{ type: "text", text: "File not found." }],
-                    isError: true
+                    content: [{ type: "text", text }]
                 };
             }
-            return {
-                content: [{ type: "text", text: content }]
-            };
-        } catch (err: any) {
-            return {
-                content: [{ type: "text", text: `Error reading file: ${err.message}` }],
-                isError: true
-            };
-        }
-    }
-);
 
-// Resource: Docs
-server.resource(
-    "docs",
-    "docs://{path}",
-    async (uri) => {
-        return handleDocsResource(uri);
+            case "baritone_read_doc": {
+                const docPath = (args as any)?.path;
+
+                if (!docPath) {
+                    return {
+                        content: [{ type: "text", text: "Path parameter is required." }],
+                        isError: true
+                    };
+                }
+
+                if (!ensureDocs()) {
+                    return {
+                        content: [{ type: "text", text: "Documentation not found. Please run baritone_refresh_docs first." }],
+                        isError: true
+                    };
+                }
+
+                try {
+                    const content = readDoc(docPath);
+                    if (content === null) {
+                        return {
+                            content: [{ type: "text", text: "File not found." }],
+                            isError: true
+                        };
+                    }
+                    return {
+                        content: [{ type: "text", text: content }]
+                    };
+                } catch (err: any) {
+                    return {
+                        content: [{ type: "text", text: `Error reading file: ${err.message}` }],
+                        isError: true
+                    };
+                }
+            }
+
+            default:
+                return {
+                    content: [{ type: "text", text: `Unknown tool: ${name}` }],
+                    isError: true
+                };
+        }
+    } catch (error: any) {
+        return {
+            content: [{ type: "text", text: `Error: ${error.message}` }],
+            isError: true
+        };
     }
-);
+});
+
+// List available resources
+server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    return { resources: RESOURCES };
+});
+
+// Handle resource reads
+server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    const uri = new URL(request.params.uri);
+    return handleDocsResource(uri);
+});
 
 // -- Setup --
 
@@ -138,16 +226,10 @@ export async function main() {
 
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("Baritone Docs MCP Server running on stdio");
 }
 
-// Only run main if executed directly (ESM entry point check)
-const isMainModule = import.meta.url === `file://${process.argv[1]}` ||
-                     import.meta.url.endsWith(process.argv[1]);
-
-if (isMainModule) {
-    main().catch((error) => {
-        console.error("Fatal error in main():", error);
-        process.exit(1);
-    });
-}
+// Start the MCP server
+main().catch((error) => {
+    console.error('Fatal error:', error);
+    process.exit(1);
+});

@@ -40,8 +40,6 @@ export async function updateDocs(repoOwner: string = "MCDxAI", repoName: string 
     const url = `https://github.com/${repoOwner}/${repoName}/archive/refs/heads/${branch}.zip`;
     const zipPath = path.join(cacheDir, 'docs.zip');
 
-    console.error(`Downloading docs from ${url} to ${zipPath}...`);
-
     try {
         const response = await axios({
             method: 'get',
@@ -50,9 +48,6 @@ export async function updateDocs(repoOwner: string = "MCDxAI", repoName: string 
         });
 
         fs.writeFileSync(zipPath, response.data);
-        console.error('Download complete.');
-
-        console.error('Extracting...');
         const zip = new AdmZip(zipPath);
         // The zip will contain a root folder like "baritone-docs-mcp-docs", we want to extract that
 
@@ -108,10 +103,8 @@ export async function updateDocs(repoOwner: string = "MCDxAI", repoName: string 
 
         // Cleanup zip
         fs.unlinkSync(zipPath);
-        console.error('Docs updated successfully.');
 
     } catch (error: any) {
-        console.error(`Failed to update docs: ${error.message}`);
         throw new DownloadError(`Failed to download or extract docs: ${error.message}`);
     }
 }
@@ -127,7 +120,6 @@ export function initLocalDocs(localDocsPath: string): void {
         return; // Already exists
     }
 
-    console.error(`Initializing docs from local path: ${localDocsPath}`);
     // Simple recursive copy
     fs.cpSync(localDocsPath, targetDir, { recursive: true });
 }

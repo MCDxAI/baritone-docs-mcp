@@ -2,33 +2,14 @@
 
 # Baritone Docs MCP
 
-</div>
-
-<div align="center">
-
-![Version](https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge)
-![License](https://img.shields.io/badge/license-ISC-green?style=for-the-badge)
-![Status](https://img.shields.io/badge/status-active-success?style=for-the-badge)
-
-</div>
-
-<div align="center">
-
 A Model Context Protocol server for Baritone documentation.
 <br>
-This tool empowers AI agents to search, read, and reference Baritone's extensive documentation seamlessly.
 
-</div>
+
 
 <br>
 
-<div align="center">
-
 ## Features
-
-</div>
-
-<div align="center">
 
 | Feature | Description |
 | :---: | :---: |
@@ -37,17 +18,9 @@ This tool empowers AI agents to search, read, and reference Baritone's extensive
 | **Read Doc** | Retrieves the full text content of specific documentation files. |
 | **Resource Access** | Exposes documentation via the `docs://` URI scheme for direct reference. |
 
-</div>
-
 <br>
 
-<div align="center">
-
 ## Project Structure
-
-</div>
-
-<div align="center">
 
 | File / Directory | Description |
 | :---: | :---: |
@@ -59,3 +32,40 @@ This tool empowers AI agents to search, read, and reference Baritone's extensive
 | `tests/` | Integration tests for the MCP server. |
 
 </div>
+
+<div align="center">
+
+**Install the MCP Server**
+
+</div>
+
+```bash
+# Clone the repository
+git clone https://github.com/MCDxAI/baritone-docs-mcp.git
+cd code-search-mcp
+
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+```
+
+<div align="center">
+  <h2>Configuration</h2>
+</div>
+
+Add to your MCP settings file (e.g., `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "code-search": {
+      "command": "node",
+      "args": [
+        "/path/to/baritone-docs-mcp/dist/index.js"
+      ]
+    }
+  }
+}
+```
