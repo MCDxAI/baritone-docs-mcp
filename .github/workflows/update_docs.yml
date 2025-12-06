@@ -1,0 +1,58 @@
+name: Update Documentation
+
+on:
+  schedule:
+    # Run every Sunday at midnight
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scrape-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: scraper/go.sum
+
+      - name: Install dependencies and run scraper
+        run: |
+          cd scraper
+          go mod tidy
+          go run main.go
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          # Force add docs folder to ensure we catch changes
+          git add -f docs/
+          git diff --staged --quiet || echo "changes=true" >> $GITHUB_OUTPUT
+
+      - name: Deploy to docs branch
+        if: steps.git-check.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Stash the docs changes
+          git stash push docs/
+          
+          # Switch to or create orphan docs branch
+          git checkout --orphan docs
+          git rm -rf .
+          
+          # Apply the docs changes
+          git stash pop
+          git add docs/
+          
+          git commit -m "docs: update baritone documentation from $(date +'%Y-%m-%d') [skip ci]"
+          git push -f origin docs

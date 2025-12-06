@@ -1,0 +1,36 @@
+{
+  "name": "baritone-docs-mcp",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Model Context Protocol server for Baritone documentation",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MCDxAI/baritone-docs-mcp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MCDxAI/baritone-docs-mcp/issues"
+  },
+  "homepage": "https://github.com/MCDxAI/baritone-docs-mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.24.3",
+    "@types/adm-zip": "^0.5.7",
+    "@types/node": "^24.10.1",
+    "adm-zip": "^0.5.16",
+    "axios": "^1.13.2",
+    "env-paths": "^3.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "zod": "^4.1.13"
+  }
+}

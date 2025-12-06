@@ -1,0 +1,16 @@
+# OS junk
+*.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+dist/
+build/
+.env
+
+# Go
+scraper/baritone-docs-scraper
+scraper/baritone-docs-scraper.exe
+
+# Misc
+docs/*
