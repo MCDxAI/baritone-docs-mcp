@@ -138,7 +138,6 @@ export async function main() {
 
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("Baritone Docs MCP Server running on stdio");
 }
 
 // Only run main if executed directly (ESM entry point check)
@@ -147,7 +146,6 @@ const isMainModule = import.meta.url === `file://${process.argv[1]}` ||
 
 if (isMainModule) {
     main().catch((error) => {
-        console.error("Fatal error in main():", error);
         process.exit(1);
     });
 }

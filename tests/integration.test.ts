@@ -19,7 +19,6 @@ describe('Baritone Docs MCP Integration', () => {
     });
 
     it('should download and cache documentation correctly', async () => {
-        console.log('Downloading docs from GitHub...');
         await updateDocs("MCDxAI", "baritone-docs-mcp", "docs");
         expect(ensureDocs()).toBe(true);
         const docsDir = getDocsDir();
