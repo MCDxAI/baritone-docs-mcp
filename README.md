@@ -14,7 +14,6 @@ A Model Context Protocol server for Baritone documentation.
 ![Axios](https://img.shields.io/badge/Axios-1.13.2-5A29E4?style=flat)
 ![Zod](https://img.shields.io/badge/Zod-4.1.13-3E67B1?style=flat)
 ![Vitest](https://img.shields.io/badge/Vitest-4.0.15-6E9F18?style=flat&logo=vitest&logoColor=white)
-![License](https://img.shields.io/badge/License-ISC-blue?style=flat)
 
 </div>
 
